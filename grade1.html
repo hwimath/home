@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>소수의 연산 게임</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 스타일 -->
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            background-color: #f9fafb;
+            margin: 0;
+            padding: 0;
+        }
+        #gameTitle {
+            background-color: #2563eb;
+            color: white;
+            padding: 20px;
+            font-size: 2em;
+        }
+        #scoreBoard {
+            margin: 20px;
+            font-size: 1.2em;
+        }
+        #energyBarContainer {
+            width: 80%;
+            height: 20px;
+            background-color: #ddd;
+            margin: 0 auto;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        #energyBar {
+            width: 100%;
+            height: 100%;
+            background-color: #34d399;
+            transition: width 0.1s linear;
+        }
+        #questionDisplay {
+            font-size: 2em;
+            margin: 30px;
+        }
+        #buttonsContainer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 20px;
+        }
+        .answerButton {
+            width: 40%;
+            max-width: 200px;
+            margin: 10px;
+            padding: 15px;
+            font-size: 1.2em;
+            cursor: pointer;
+            background-color: #fff;
+            border: 2px solid #2563eb;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+        .answerButton:hover {
+            background-color: #2563eb;
+            color: #fff;
+        }
+        #resultMessage {
+            font-size: 1.5em;
+            margin: 20px;
+            height: 40px;
+        }
+        #finalScore {
+            font-size: 2em;
+            margin: 50px;
+            color: #d32f2f;
+        }
+        #startButton {
+            font-size: 1.5em;
+            padding: 15px 30px;
+            cursor: pointer;
+            background-color: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            margin-top: 30px;
+        }
+        #startButton:hover {
+            background-color: #1e40af;
+        }
+        #watermark {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 1em;
+            color: rgba(0, 0, 0, 0.3);
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="gameTitle">소수의 연산 게임</div>
+    <div id="scoreBoard">점수: <span id="score">0</span> | 남은 기회: <span id="lives">3</span>/3</div>
+    <div id="energyBarContainer">
+        <div id="energyBar"></div>
+    </div>
+    <div id="questionDisplay"></div>
+    <div id="buttonsContainer"></div>
+    <div id="resultMessage"></div>
+    <button id="startButton">게임 시작하기</button>
+    <div id="finalScore"></div>
+
+    <!-- 워터마크 -->
+    <div id="watermark">휘매쓰</div>
+
+    <!-- 스크립트 -->
+    <script>
+        let score = 0;
+        let lives = 3;
+        let timeLimit = 15000; // 초기 제한 시간 15초
+        let timer;
+        let timeRemaining;
+        let energyBarInterval;
+        let questionCount = 0;
+
+        const questionDisplay = document.getElementById('questionDisplay');
+        const buttonsContainer = document.getElementById('buttonsContainer');
+        const resultMessage = document.getElementById('resultMessage');
+        const finalScore = document.getElementById('finalScore');
+        const startButton = document.getElementById('startButton');
+        const scoreElement = document.getElementById('score');
+        const livesElement = document.getElementById('lives');
+        const energyBar = document.getElementById('energyBar');
+
+        startButton.addEventListener('click', startGame);
+
+        function startGame() {
+            score = 0;
+            lives = 3;
+            timeLimit = 15000;
+            questionCount = 0;
+            finalScore.textContent = '';
+            resultMessage.textContent = '';
+            startButton.style.display = 'none';
+            updateScoreBoard();
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            questionCount++;
+            // 시간 1% 감소
+            timeLimit = timeLimit * 0.99;
+            generateQuestion();
+            startTimer();
+        }
+
+        function generateQuestion() {
+            const operators = ['+', '-', '×', '÷'];
+            const operator = operators[Math.floor(Math.random() * operators.length)];
+
+            let num1 = (Math.random() * 10).toFixed(2);
+            let num2 = (Math.random() * 10).toFixed(2);
+
+            num1 = parseFloat(num1);
+            num2 = parseFloat(num2);
+
+            let correctAnswer;
+
+            switch (operator) {
+                case '+':
+                    correctAnswer = (num1 + num2).toFixed(2);
+                    break;
+                case '-':
+                    correctAnswer = (num1 - num2).toFixed(2);
+                    break;
+                case '×':
+                    correctAnswer = (num1 * num2).toFixed(2);
+                    break;
+                case '÷':
+                    // 0으로 나누기 방지
+                    while (num2 === 0) {
+                        num2 = parseFloat((Math.random() * 10).toFixed(2));
+                    }
+                    correctAnswer = (num1 / num2).toFixed(2);
+                    break;
+            }
+
+            const question = `${num1} ${operator} ${num2} = ?`;
+
+            questionDisplay.textContent = question;
+
+            const options = [correctAnswer];
+            while (options.length < 4) {
+                let wrongAnswer = (parseFloat(correctAnswer) + (Math.random() * 4 - 2)).toFixed(2);
+                if (!options.includes(wrongAnswer)) {
+                    options.push(wrongAnswer);
+                }
+            }
+            options.sort(() => Math.random() - 0.5);
+
+            buttonsContainer.innerHTML = '';
+            options.forEach(option => {
+                const button = document.createElement('button');
+                button.classList.add('answerButton');
+                button.textContent = option;
+                button.addEventListener('click', () => checkAnswer(option, correctAnswer));
+                buttonsContainer.appendChild(button);
+            });
+        }
+
+        function checkAnswer(selectedAnswer, correctAnswer) {
+            clearInterval(energyBarInterval);
+            clearTimeout(timer);
+            if (parseFloat(selectedAnswer) === parseFloat(correctAnswer)) {
+                score += 10;
+                resultMessage.style.color = 'green';
+                resultMessage.textContent = '정답입니다!';
+                scoreElement.textContent = score;
+            } else {
+                lives--;
+                resultMessage.style.color = 'red';
+                resultMessage.textContent = '오답입니다!';
+                updateScoreBoard();
+            }
+            setTimeout(() => {
+                if (lives <= 0) {
+                    endGame();
+                } else {
+                    nextQuestion();
+                }
+            }, 1000);
+        }
+
+        function startTimer() {
+            timeRemaining = timeLimit;
+            updateEnergyBar();
+            energyBarInterval = setInterval(() => {
+                timeRemaining -= 50;
+                updateEnergyBar();
+                if (timeRemaining <= 0) {
+                    clearInterval(energyBarInterval);
+                    clearTimeout(timer);
+                    lives--;
+                    resultMessage.style.color = 'red';
+                    resultMessage.textContent = '시간 초과!';
+                    updateScoreBoard();
+                    setTimeout(() => {
+                        if (lives <= 0) {
+                            endGame();
+                        } else {
+                            nextQuestion();
+                        }
+                    }, 1000);
+                }
+            }, 50);
+            timer = setTimeout(() => {
+                clearInterval(energyBarInterval);
+            }, timeLimit);
+        }
+
+        function updateEnergyBar() {
+            const width = (timeRemaining / timeLimit) * 100;
+            energyBar.style.width = width + '%';
+        }
+
+        function updateScoreBoard() {
+            scoreElement.textContent = score;
+            livesElement.textContent = lives;
+        }
+
+        function endGame() {
+            buttonsContainer.innerHTML = '';
+            questionDisplay.textContent = '';
+            resultMessage.textContent = '';
+            finalScore.textContent = `게임 종료! 총점: ${score}점`;
+            startButton.textContent = '다시 시작하기';
+            startButton.style.display = 'inline-block';
+        }
+    </script>
+
+</body>
+</html>
