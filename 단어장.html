@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>단어 암기 프로그램</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        #content {
+            max-width: 600px;
+            margin: 50px auto;
+        }
+        h1 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        .word-list {
+            text-align: left;
+            margin-bottom: 30px;
+        }
+        .word-item {
+            font-size: 1.2em;
+            margin: 5px 0;
+        }
+        #question {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+        .options {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .option-button {
+            width: 80%;
+            max-width: 300px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #fff;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            transition: all 0.2s;
+        }
+        .option-button:hover {
+            background-color: #e0e0e0;
+        }
+        #feedback {
+            font-size: 1.2em;
+            margin: 20px;
+        }
+        #next-button {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            background-color: #4caf50;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        #next-button:hover {
+            background-color: #45a049;
+        }
+        #input-answer {
+            font-size: 1.2em;
+            padding: 10px;
+            width: 60%;
+            max-width: 300px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div id="content">
+    <h1>단어 암기 프로그램</h1>
+    <div id="stage"></div>
+</div>
+
+<script>
+    const words = [
+        {english: 'mud', korean: '진흙'},
+        {english: 'animals', korean: '동물들'},
+        {english: 'sit', korean: '앉다'},
+        {english: 'ask', korean: '묻다'},
+        {english: 'think', korean: '생각하다'},
+        {english: 'sad', korean: '슬픈'},
+        {english: 'wrong', korean: '잘못된'},
+        {english: 'dirty', korean: '더러운'}
+    ];
+
+    let currentStage = 0;
+    let currentQuestionIndex = 0;
+    let shuffledWords = [];
+
+    function startProgram() {
+        currentStage = 0;
+        showWordList();
+    }
+
+    function showWordList() {
+        const stageDiv = document.getElementById('stage');
+        stageDiv.innerHTML = '';
+        const wordListDiv = document.createElement('div');
+        wordListDiv.className = 'word-list';
+        words.forEach(word => {
+            const wordItem = document.createElement('div');
+            wordItem.className = 'word-item';
+            wordItem.textContent = `${word.english} - ${word.korean}`;
+            wordListDiv.appendChild(wordItem);
+        });
+        stageDiv.appendChild(wordListDiv);
+
+        const nextButton = document.createElement('button');
+        nextButton.id = 'next-button';
+        nextButton.textContent = '다음 단계로 이동';
+        nextButton.onclick = () => {
+            currentStage = 1;
+            currentQuestionIndex = 0;
+            shuffledWords = shuffleArray([...words]);
+            showEnglishToKoreanQuestion();
+        };
+        stageDiv.appendChild(nextButton);
+    }
+
+    function showEnglishToKoreanQuestion() {
+        if (currentQuestionIndex >= shuffledWords.length) {
+            currentStage = 2;
+            currentQuestionIndex = 0;
+            shuffledWords = shuffleArray([...words]);
+            showKoreanToEnglishQuestion();
+            return;
+        }
+        const stageDiv = document.getElementById('stage');
+        stageDiv.innerHTML = '';
+
+        const questionDiv = document.createElement('div');
+        questionDiv.id = 'question';
+        questionDiv.textContent = `다음 영어 단어의 뜻은 무엇일까요?`;
+        stageDiv.appendChild(questionDiv);
+
+        const wordDiv = document.createElement('div');
+        wordDiv.style.fontSize = '2em';
+        wordDiv.style.margin = '20px 0';
+        wordDiv.textContent = shuffledWords[currentQuestionIndex].english;
+        stageDiv.appendChild(wordDiv);
+
+        const optionsDiv = document.createElement('div');
+        optionsDiv.className = 'options';
+
+        const correctAnswer = shuffledWords[currentQuestionIndex].korean;
+        const optionWords = shuffleArray(getOptions(correctAnswer, 'korean'));
+
+        optionWords.forEach(option => {
+            const optionButton = document.createElement('button');
+            optionButton.className = 'option-button';
+            optionButton.textContent = option;
+            optionButton.onclick = () => {
+                checkAnswer(option, correctAnswer);
+            };
+            optionsDiv.appendChild(optionButton);
+        });
+
+        stageDiv.appendChild(optionsDiv);
+
+        const feedbackDiv = document.createElement('div');
+        feedbackDiv.id = 'feedback';
+        stageDiv.appendChild(feedbackDiv);
+    }
+
+    function showKoreanToEnglishQuestion() {
+        if (currentQuestionIndex >= shuffledWords.length) {
+            currentStage = 3;
+            currentQuestionIndex = 0;
+            shuffledWords = shuffleArray([...words]);
+            showFillInTheBlankQuestion();
+            return;
+        }
+        const stageDiv = document.getElementById('stage');
+        stageDiv.innerHTML = '';
+
+        const questionDiv = document.createElement('div');
+        questionDiv.id = 'question';
+        questionDiv.textContent = `다음 뜻에 해당하는 영어 단어는 무엇일까요?`;
+        stageDiv.appendChild(questionDiv);
+
+        const wordDiv = document.createElement('div');
+        wordDiv.style.fontSize = '2em';
+        wordDiv.style.margin = '20px 0';
+        wordDiv.textContent = shuffledWords[currentQuestionIndex].korean;
+        stageDiv.appendChild(wordDiv);
+
+        const optionsDiv = document.createElement('div');
+        optionsDiv.className = 'options';
+
+        const correctAnswer = shuffledWords[currentQuestionIndex].english;
+        const optionWords = shuffleArray(getOptions(correctAnswer, 'english'));
+
+        optionWords.forEach(option => {
+            const optionButton = document.createElement('button');
+            optionButton.className = 'option-button';
+            optionButton.textContent = option;
+            optionButton.onclick = () => {
+                checkAnswer(option, correctAnswer);
+            };
+            optionsDiv.appendChild(optionButton);
+        });
+
+        stageDiv.appendChild(optionsDiv);
+
+        const feedbackDiv = document.createElement('div');
+        feedbackDiv.id = 'feedback';
+        stageDiv.appendChild(feedbackDiv);
+    }
+
+    function showFillInTheBlankQuestion() {
+        if (currentQuestionIndex >= shuffledWords.length) {
+            const stageDiv = document.getElementById('stage');
+            stageDiv.innerHTML = '';
+            const finishDiv = document.createElement('div');
+            finishDiv.style.fontSize = '2em';
+            finishDiv.textContent = '모든 단계를 완료했습니다!';
+            stageDiv.appendChild(finishDiv);
+            return;
+        }
+        const stageDiv = document.getElementById('stage');
+        stageDiv.innerHTML = '';
+
+        const questionDiv = document.createElement('div');
+        questionDiv.id = 'question';
+        questionDiv.textContent = `다음 뜻에 해당하는 영어 단어의 철자를 완성하세요.`;
+        stageDiv.appendChild(questionDiv);
+
+        // 뜻을 보여주는 부분 추가
+        const meaningDiv = document.createElement('div');
+        meaningDiv.style.fontSize = '1.5em';
+        meaningDiv.style.margin = '20px 0';
+        meaningDiv.textContent = shuffledWords[currentQuestionIndex].korean;
+        stageDiv.appendChild(meaningDiv);
+
+        const word = shuffledWords[currentQuestionIndex].english;
+        const hiddenWord = hideLetters(word);
+
+        const wordDiv = document.createElement('div');
+        wordDiv.style.fontSize = '2em';
+        wordDiv.style.margin = '20px 0';
+        wordDiv.innerHTML = hiddenWord;
+        stageDiv.appendChild(wordDiv);
+
+        const inputAnswer = document.createElement('input');
+        inputAnswer.id = 'input-answer';
+        inputAnswer.type = 'text';
+        inputAnswer.placeholder = '정답 입력';
+        stageDiv.appendChild(inputAnswer);
+
+        const submitButton = document.createElement('button');
+        submitButton.id = 'next-button';
+        submitButton.textContent = '제출';
+        submitButton.onclick = () => {
+            const userAnswer = inputAnswer.value.trim();
+            checkFillInAnswer(userAnswer, word);
+        };
+        stageDiv.appendChild(submitButton);
+
+        const feedbackDiv = document.createElement('div');
+        feedbackDiv.id = 'feedback';
+        stageDiv.appendChild(feedbackDiv);
+    }
+
+    function checkAnswer(userAnswer, correctAnswer) {
+        const feedbackDiv = document.getElementById('feedback');
+        if (userAnswer === correctAnswer) {
+            feedbackDiv.textContent = '정답입니다!';
+            feedbackDiv.style.color = 'green';
+        } else {
+            feedbackDiv.textContent = `오답입니다! 정답은 "${correctAnswer}"입니다.`;
+            feedbackDiv.style.color = 'red';
+        }
+        currentQuestionIndex++;
+        setTimeout(() => {
+            if (currentStage === 1) {
+                showEnglishToKoreanQuestion();
+            } else if (currentStage === 2) {
+                showKoreanToEnglishQuestion();
+            }
+        }, 2000);
+    }
+
+    function checkFillInAnswer(userAnswer, correctAnswer) {
+        const feedbackDiv = document.getElementById('feedback');
+        if (userAnswer.toLowerCase() === correctAnswer.toLowerCase()) {
+            feedbackDiv.textContent = '정답입니다!';
+            feedbackDiv.style.color = 'green';
+        } else {
+            feedbackDiv.textContent = `오답입니다! 정답은 "${correctAnswer}"입니다.`;
+            feedbackDiv.style.color = 'red';
+        }
+        currentQuestionIndex++;
+        setTimeout(() => {
+            showFillInTheBlankQuestion();
+        }, 2000);
+    }
+
+    function getOptions(correctAnswer, key) {
+        const options = [correctAnswer];
+        while (options.length < 4) {
+            const randomWord = words[Math.floor(Math.random() * words.length)][key];
+            if (!options.includes(randomWord)) {
+                options.push(randomWord);
+            }
+        }
+        return options;
+    }
+
+    function shuffleArray(array) {
+        return array.sort(() => Math.random() - 0.5);
+    }
+
+    function hideLetters(word) {
+        const letters = word.split('');
+        const indicesToHide = [];
+        while (indicesToHide.length < Math.ceil(word.length / 2)) {
+            const randomIndex = Math.floor(Math.random() * word.length);
+            if (!indicesToHide.includes(randomIndex)) {
+                indicesToHide.push(randomIndex);
+                letters[randomIndex] = '_';
+            }
+        }
+        return letters.join('');
+    }
+
+    // 프로그램 시작
+    startProgram();
+</script>
+
+</body>
+</html>
